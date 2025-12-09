@@ -4,9 +4,20 @@
 % Respiration phase coherence in window around switch
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 clear; close all;
-load('Resp_data.mat');
+
+% Resp_data & Eye_data contains the data from the 21 included participants
+% in this analysis. The remaining 11 participants were excluded due to too
+% high or low numbers of reversals.
 
 addpath(genpath('colormaps'));
+
+load('Resp_data.mat');
+Resp_data  = test_Resp;
+clear test_Resp;
+
+load('Eye_data.mat');
+Eye_data = test_Eye;
+clear test_Eye;
 
 % Saving figures when running the script or not 
 saving_figures = 0; % 0 = not saving, 1 = saving
@@ -23,28 +34,6 @@ d = 0;
 blue1 = [59, 128, 151]./255;
 blue3 = [90 137 175]./255;
 
-% Exclude all participants with >900 & <120 button presses
-
-for k = 1:32
-    if Resp_data.Resp_data(k).TotalSwitch > 900 || length(Resp_data.Resp_data(k).All_button_type) < 120
-        store(k) = 0;
-    else
-        store(k) = 1;
-    end
-    tmp(k,1) = Resp_data.Resp_data(k).TotalSwitch;
-    tmp(k,2) = length(Resp_data.Resp_data(k).All_button_type);
-end
-
-% figure(1); 
-% bar(tmp)
-% yline(120,'LineWidth',2,'LineStyle','--'); yline(900,'LineWidth',2,'LineStyle','--');
-% title('AK01','FontSize',30,FontWeight='bold');
-% t = text(8,1450, 'In all subjects >50% of trials survive resp cleaning');
-% t.FontSize = 25;
-% legend({'Original trial number','Trial number after resp cleaning','120','900'});
-
-store = logical(store);
-Resp_data.Resp_data = Resp_data.Resp_data(store);
 
 for S = 1:length(Resp_data.Resp_data)
 
@@ -57,49 +46,10 @@ for S = 1:length(Resp_data.Resp_data)
     no_kept(S,1) = length(idx);
 end
 
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Preparing data to have matching trials of respiration & eye data
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-load('Eye_data.mat');
-% Adjust the eye data
-for k = 1:32
-    if Eye_data.Eye_data(k).TotalSwitch > 900 || length(Eye_data.Eye_data(k).All_button_type) < 120
-        store(k) = 0;
-    else
-        store(k) = 1;
-    end
-    tmp(k,1) = Eye_data.Eye_data(k).TotalSwitch;
-    tmp(k,2) = length(Eye_data.Eye_data(k).All_button_type);
-end
-store = logical(store);
-Eye_data.Eye_data = Eye_data.Eye_data(store);
 
-
-% Finding all subjects that are in resp AND eye data 
-resp_nr = length(Resp_data.Resp_data);
-eye_nr = length(Eye_data.Eye_data);
-
-for l = 1:resp_nr
-    A(l) = Resp_data.Resp_data(l).SubjectID;
-end
-for m = 1:eye_nr
-    B(m) = Eye_data.Eye_data(m).SubjectID;
-end
-common_values = intersect(A,B);
-
-% Create logical arrays initialized to zero
-new_idx_eye = zeros(size(B));
-new_idx_resp = zeros(size(A));
-
-% Mark indices that should be kept with 1
-for j = 1:length(common_values)
-    new_idx_resp = new_idx_resp | (A == common_values(j));
-    new_idx_eye = new_idx_eye | (B == common_values(j));
-end
-
-% These are the new datasets that contain the shared subjects
-eye = Eye_data.Eye_data(new_idx_eye);
-resp = Resp_data.Resp_data(new_idx_resp);
+%
+eye = Eye_data.Eye_data;
+resp = Resp_data.Resp_data;
 
 Nsub = length(resp);
 
@@ -536,6 +486,8 @@ text(-0.65,5.75,'C','FontSize',30,'FontWeight','bold'); % -0.65
 % Alldata contains [RespPhase, Sine, Cosine, RespFreq, NormRespFreq, BinnedNormRespFreq, NormPreDur, NormPostDur,
 % RawPreDur, RawPostDur, NormPupil, Button, TrialID, SubjID]
 
+Alldata = double(Alldata);
+
 c = 1;
 for k = 1:20:size(Alldata,3)
     k
@@ -734,6 +686,8 @@ Alldata_pupil = vertcat(tmp{:});
 % BinnedNormRespFreq, NormPreDur, NormPostDur, RawPreDur, RawPostDur, 
 % NormPupil, Button, TrialID, SubjID]
 
+Alldata_pupil = double(Alldata_pupil);
+
 c = 1;
 for k = 1:20:size(Alldata_pupil,3)
     k
@@ -806,13 +760,13 @@ for S = 1:length(eye)
         TR = [];
         TE = [];
         for trial = 1:6
-            tmpResp = squeeze(resp(S).Resp.RespDispOn{block}(trial,3,:));
+            tmpResp = double(squeeze(resp(S).Resp.RespDispOn{block}(trial,3,:)));
             tmpResp = resample(tmpResp',1,10,'Dimension',2);
             tmpResp = tmpResp';
 
             TR = [TR;tmpResp];
 
-            tmpEye = eye(S).Eye{block}(trial,:);
+            tmpEye = double(eye(S).Eye{block}(trial,:));
             tmpEye = resample(tmpEye,1,10,'Dimension',2);
             tmpEye = tmpEye';
 
@@ -845,8 +799,8 @@ for S = 1:length(eye)
     end % bin
 
 
-    resp(S).All_resp_button = resample(resp(S).All_resp_button,1,10,'Dimension',3);
-    eye(S).All_eye_button = resample(eye(S).All_eye_button,1,10,'Dimension',3);
+    resp(S).All_resp_button = resample(double(resp(S).All_resp_button),1,10,'Dimension',3);
+    eye(S).All_eye_button = resample(double(eye(S).All_eye_button),1,10,'Dimension',3);
     win_phase = [];
     win_pupil = [];
 
